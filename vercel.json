@@ -5,9 +5,7 @@
   "buildCommand": "npm run check-secrets && npm run build",
   "outputDirectory": "dist",
   "public": false,
-  "git": {
-    "deploymentEnabled": false
-  },
+
   "functions": {
     "api/chat.js": {
       "maxDuration": 15,
