@@ -69,12 +69,12 @@ export default function HUD({ scrollProgress = 0 }) {
           rel="noopener noreferrer"
           aria-label="Register for GTR 2026"
           style={{
-            position: 'fixed',
+            position: 'absolute',
             top: `${bannerPos.top}%`,
             left: `${bannerPos.left}%`,
             width: `${bannerPos.width}%`,
             height: `${bannerPos.height}%`,
-            zIndex: 5,
+            zIndex: 15,
             cursor: 'pointer',
             display: 'block',
             pointerEvents: 'all',
