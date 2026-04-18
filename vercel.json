@@ -1,20 +1,7 @@
 {
   "name": "gtr-2026",
   "version": 2,
-  "env": {
-    "GEMINI_API_KEY": {
-      "description": "Primary Gemini API key",
-      "required": true
-    },
-    "GEMINI_API_KEY_2": {
-      "description": "Backup Gemini API key for failover",
-      "required": false
-    },
-    "GROQ_API_KEY": {
-      "description": "Groq API key - third fallback when Gemini is exhausted",
-      "required": false
-    }
-  },
+
   "buildCommand": "npm run check-secrets && npm run build",
   "outputDirectory": "dist",
   "public": false,
