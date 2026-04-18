@@ -69,7 +69,7 @@ export default function Chatbot() {
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && setIsOpen(true)}
       >
-        <div className="chatbot-inline-icon">💬</div>
+        <img src="/orange-logo.png" alt="GTR Logo" className="chatbot-inline-img" />
         <div className="chatbot-inline-text">Ask about GTR 2026</div>
         <button tabIndex={-1} className="chatbot-inline-action">Ask</button>
       </div>
@@ -80,9 +80,9 @@ export default function Chatbot() {
           {/* Header */}
           <div className="chatbot-header">
             <div className="chatbot-header-info">
-              <div className="chatbot-avatar">🏎️</div>
+              <img src="/purple-logo.png" alt="GTR Avatar" className="chatbot-avatar-img" />
               <div>
-                <div className="chatbot-header-title">GTR 2026</div>
+                <div className="chatbot-header-title">GTR 2026 — Grand Tech Racing</div>
                 <div className="chatbot-header-status">Online</div>
               </div>
             </div>

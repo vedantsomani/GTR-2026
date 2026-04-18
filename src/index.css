@@ -955,12 +955,11 @@ body,
   transform: translate(-50%, 20px) scale(0.95);
 }
 
-.chatbot-inline-icon {
-  font-size: 1.2rem;
-  color: var(--accent-gold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.chatbot-inline-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
 }
 
 .chatbot-inline-text {
@@ -1036,15 +1035,12 @@ body,
   gap: 12px;
 }
 
-.chatbot-avatar {
+.chatbot-avatar-img {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: var(--bg-surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
 }
 
 .chatbot-header-title {
