@@ -69,7 +69,7 @@ export default function Chatbot() {
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && setIsOpen(true)}
       >
-        <img src="/orange-logo.png" alt="GTR Logo" className="chatbot-inline-img" />
+        <div className="chatbot-inline-icon">💬</div>
         <div className="chatbot-inline-text">Ask about GTR 2026</div>
         <button tabIndex={-1} className="chatbot-inline-action">Ask</button>
       </div>

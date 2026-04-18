@@ -284,10 +284,17 @@ body,
 
 .nav-brand {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  align-items: center; /* Changed from baseline to center for image alignment */
+  gap: 12px;
   cursor: default;
   user-select: none;
+}
+
+.nav-brand-img {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .nav-brand-gtr {

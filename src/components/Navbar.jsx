@@ -23,6 +23,7 @@ export default function Navbar({ onOpenFAQ, onOpenRuleBook, scrollProgress = 0 }
       <nav className={`navbar ${scrolled ? 'navbar-scrolled' : ''}`} id="main-navbar">
         {/* Logo */}
         <div className="nav-brand" id="site-logo">
+          <img src="/orange-logo.png" alt="GTR Logo" className="nav-brand-img" />
           <span className="nav-brand-gtr">GTR</span>
           <span className="nav-brand-year">2026</span>
         </div>
