@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import WebPSequence from './components/WebPSequence.jsx'
 import HUD from './components/HUD.jsx'
-import ProgressiveLoader from './components/ProgressiveLoader.jsx'
-import ErrorBoundary from './components/ErrorBoundary.jsx'
+import LoadingScreen from './components/LoadingScreen.jsx'
 
 /**
  * App — Root component.
@@ -21,7 +20,7 @@ function detectMobile() {
   return isNarrow || isTouchOnly || isMobileUA
 }
 
-function AppContent() {
+export default function App() {
   const [loaded, setLoaded] = useState(false)
   const [loadProgress, setLoadProgress] = useState(0)
   const [scrollProgress, setScrollProgress] = useState(0)
@@ -36,7 +35,7 @@ function AppContent() {
   }, [])
 
   const handleLoaded = useCallback(() => {
-    console.log('[App] All frames ready.')
+    console.log('[App] Minimum frame threshold reached. Hiding loader.')
     setLoaded(true)
   }, [])
 
@@ -48,11 +47,13 @@ function AppContent() {
 
   return (
     <>
-      {/* Progressive Loader — replaces old splash screen */}
-      <ProgressiveLoader
-        progress={loadProgress}
-        isReady={loaded}
-      />
+      {/* Loading Screen */}
+      {!loaded && (
+        <LoadingScreen 
+          progress={loadProgress} 
+          onFinished={() => {}} 
+        />
+      )}
 
       {/* Frame Sequence Canvas */}
       <div className="canvas-container">
@@ -64,16 +65,8 @@ function AppContent() {
         />
       </div>
 
-      {/* HUD — shows navbar + register button at end */}
+      {/* HUD — shows logo + register button at end */}
       {loaded && <HUD scrollProgress={scrollProgress} />}
     </>
-  )
-}
-
-export default function App() {
-  return (
-    <ErrorBoundary>
-      <AppContent />
-    </ErrorBoundary>
   )
 }

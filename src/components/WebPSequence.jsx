@@ -8,78 +8,121 @@ import React, { useEffect, useRef, useState } from 'react'
 export default function WebPSequence({ sequencePath = '/frames/pc/', onProgress, onLoaded, onLoadProgress }) {
   const canvasRef = useRef(null)
   const imagesRef = useRef([])
+  const requestFrameRef = useRef(() => {})
   const [isReady, setIsReady] = useState(false)
   const lastDrawableIndexRef = useRef(0)
-
+  
   const progressRef = useRef(0)        // current (lerped)
   const targetProgressRef = useRef(0)  // target from scroll
   const lastReportedRef = useRef(-1)
-
+  
   const TOTAL_FRAMES = 480
-  const READY_FRAME_COUNT = 12
-  const READY_TIMEOUT_MS = 15000
+  const REQUIRED_READY_FRAMES = Math.min(400, TOTAL_FRAMES)
+  const LAZY_LOAD_INTERVAL_MS = 60
 
   // 1. Preload images
   useEffect(() => {
     console.log(`[WebPSequence] Preloading sequence from: ${sequencePath}`)
-
+    
     // Reset state for new sequence
     setIsReady(false)
     lastDrawableIndexRef.current = 0
+    progressRef.current = 0
+    targetProgressRef.current = 0
+    lastReportedRef.current = -1
     imagesRef.current = []
-    let loadedCount = 0
-    const images = []
+    let totalLoadedCount = 0
+    let totalSettledCount = 0
+    let nextReadyReplacementIndex = REQUIRED_READY_FRAMES
+    const requested = Array(TOTAL_FRAMES).fill(false)
+    const images = Array.from({ length: TOTAL_FRAMES }, () => new Image())
     let isCancelled = false
     let hasReportedReady = false
+    let lazyLoadTimer = null
+
+    const updateReadyProgress = () => {
+      const pct = Math.round((Math.min(totalLoadedCount, REQUIRED_READY_FRAMES) / REQUIRED_READY_FRAMES) * 100)
+      onLoadProgress?.(pct)
+    }
+
+    const requestFrame = (index) => {
+      if (isCancelled) return
+      if (index < 0 || index >= TOTAL_FRAMES) return
+      if (requested[index]) return
+
+      requested[index] = true
+      const frameStr = String(index + 1).padStart(4, '0')
+      const img = images[index]
+
+      const settle = (didLoad) => {
+        if (isCancelled) return
+
+        totalSettledCount += 1
+
+        if (didLoad) {
+          totalLoadedCount += 1
+          updateReadyProgress()
+        } else if (!hasReportedReady && nextReadyReplacementIndex < TOTAL_FRAMES) {
+          // If a required frame fails, request another frame so we can still hit 400 successful loads.
+          requestFrame(nextReadyReplacementIndex)
+          nextReadyReplacementIndex += 1
+        }
+
+        if (!hasReportedReady && totalLoadedCount >= REQUIRED_READY_FRAMES) {
+          reportReady()
+        } else if (!hasReportedReady && totalSettledCount >= TOTAL_FRAMES) {
+          console.warn('[WebPSequence] Could not reach 400 successful loads, continuing with available frames.')
+          reportReady()
+        }
+      }
+
+      img.onload = () => settle(true)
+      img.onerror = () => {
+        console.error(`[WebPSequence] ✗ Failed to load frame: ${frameStr} in ${sequencePath}`)
+        settle(false)
+      }
+      img.src = `${sequencePath}${frameStr}.webp`
+    }
+
+    requestFrameRef.current = requestFrame
+
+    const startLazyBackgroundLoading = () => {
+      let nextLazyIndex = REQUIRED_READY_FRAMES
+
+      const lazyStep = () => {
+        if (isCancelled || nextLazyIndex >= TOTAL_FRAMES) return
+        requestFrame(nextLazyIndex)
+        nextLazyIndex += 1
+        lazyLoadTimer = window.setTimeout(lazyStep, LAZY_LOAD_INTERVAL_MS)
+      }
+
+      lazyStep()
+    }
 
     const reportReady = () => {
       if (isCancelled || hasReportedReady) return
       hasReportedReady = true
-      console.log('[WebPSequence] Initial frames are ready. Rendering started.')
+      onLoadProgress?.(100)
+      console.log(`[WebPSequence] Ready after ${totalLoadedCount} loaded frames. Rendering started.`)
       setIsReady(true)
       onLoaded?.()
+      startLazyBackgroundLoading()
     }
 
-    const readyTimer = window.setTimeout(() => {
-      console.warn('[WebPSequence] Ready timeout reached, continuing with partial frames.')
-      reportReady()
-    }, READY_TIMEOUT_MS)
-
-    const handleSettled = () => {
-      loadedCount++
-      onLoadProgress?.(Math.round((loadedCount / TOTAL_FRAMES) * 100))
-
-      if (!hasReportedReady && loadedCount >= READY_FRAME_COUNT) {
-        reportReady()
-      }
-
-      if (loadedCount === TOTAL_FRAMES) {
-        console.log(`[WebPSequence] Sequence "${sequencePath}" fully loaded.`)
-        reportReady()
-      }
-    }
-
-    for (let i = 1; i <= TOTAL_FRAMES; i++) {
-      const img = new Image()
-      const frameStr = String(i).padStart(4, '0')
-      img.src = `${sequencePath}${frameStr}.webp`
-
-      img.onload = () => {
-        handleSettled()
-      }
-      img.onerror = () => {
-        console.error(`[WebPSequence] ✗ Failed to load frame: ${frameStr} in ${sequencePath}`)
-        handleSettled()
-      }
-      images.push(img)
+    onLoadProgress?.(0)
+    for (let i = 0; i < REQUIRED_READY_FRAMES; i++) {
+      requestFrame(i)
     }
     imagesRef.current = images
 
     return () => {
       isCancelled = true
-      window.clearTimeout(readyTimer)
+      requestFrameRef.current = () => {}
+      if (lazyLoadTimer) {
+        window.clearTimeout(lazyLoadTimer)
+      }
     }
-  }, [sequencePath, onLoaded, onLoadProgress])
+  }, [sequencePath, onLoaded, onLoadProgress, REQUIRED_READY_FRAMES, TOTAL_FRAMES, LAZY_LOAD_INTERVAL_MS])
 
   // 2. Scroll/Touch Listeners (Same logic as Scene.jsx)
   useEffect(() => {
@@ -136,6 +179,11 @@ export default function WebPSequence({ sequencePath = '/frames/pc/', onProgress,
         Math.floor(progressRef.current * TOTAL_FRAMES)
       )
 
+      // Load current/neighboring frames on demand after the initial 400-frame gate.
+      requestFrameRef.current(frameIndex)
+      requestFrameRef.current(frameIndex + 1)
+      requestFrameRef.current(frameIndex - 1)
+      
       const img = imagesRef.current[frameIndex]
       const fallback = imagesRef.current[lastDrawableIndexRef.current]
       const drawable = img && img.complete && img.naturalWidth > 0
@@ -149,12 +197,12 @@ export default function WebPSequence({ sequencePath = '/frames/pc/', onProgress,
 
         // Clear and draw
         ctx.clearRect(0, 0, canvas.width, canvas.height)
-
+        
         const canvasAspect = canvas.width / canvas.height
         const imgAspect = drawable.width / drawable.height
-
+        
         let drawWidth, drawHeight, offsetX, offsetY
-
+        
         // "Cover" logic: fill the screen, crop edges
         if (canvasAspect > imgAspect) {
           drawWidth = canvas.width
@@ -191,9 +239,8 @@ export default function WebPSequence({ sequencePath = '/frames/pc/', onProgress,
       const canvas = canvasRef.current
       if (!canvas) return
       // Set internal resolution matching logical pixels * scale
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      canvas.width = window.innerWidth * dpr
-      canvas.height = window.innerHeight * dpr
+      canvas.width = window.innerWidth * window.devicePixelRatio
+      canvas.height = window.innerHeight * window.devicePixelRatio
     }
     window.addEventListener('resize', handleResize)
     handleResize()
